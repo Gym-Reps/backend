@@ -11,3 +11,104 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  MEMBER
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  name               String
+  email              String              @unique
+  password_hash      String
+  role               Role                @default(MEMBER)
+  trainmentTemplates TrainmentTemplate[]
+  trainments         Trainment[]
+
+  @@map("users")
+}
+
+model TrainmentTemplate {
+  id         String    @id @default(uuid())
+  name       String
+  user       User      @relation(fields: [user_id], references: [id])
+  user_id    String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  exerciseTemplates ExerciseTemplate[]
+  trainments        Trainment[]
+
+  @@map("trainment_templates")
+}
+
+model ExerciseTemplate {
+  id   String @id @default(uuid())
+  name String
+
+  trainmentTemplate     TrainmentTemplate @relation(fields: [trainment_template_id], references: [id])
+  trainment_template_id String
+
+  sets Json default("{}")
+
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  deleted_at DateTime?
+  sets       Set[]
+  exercises  Exercise[]
+
+  @@map("exercise_templates")
+}
+
+model Trainment {
+  id String @id @default(uuid())
+
+  trainmentTemplate     TrainmentTemplate @relation(fields: [trainment_template_id], references: [id])
+  trainment_template_id String
+
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
+
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  deleted_at DateTime?
+  exercises  Exercise[]
+
+  @@map("trainments")
+}
+
+model Exercise {
+  id String @id @default(uuid())
+
+  exerciseTemplate     ExerciseTemplate @relation(fields: [exercise_template_id], references: [id])
+  exercise_template_id String
+
+  trainment    Trainment @relation(fields: [trainment_id], references: [id])
+  trainment_id String
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  sets       Set[]
+
+  @@map("exercises")
+}
+
+model Set {
+  id String @id @default(uuid())
+
+  exercise    Exercise @relation(fields: [exercise_id], references: [id])
+  exercise_id String
+
+  index              Int /* Important for ordering */
+  repetitions        Int
+  weight             Float
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
+  deleted_at         DateTime?
+  exerciseTemplate   ExerciseTemplate? @relation(fields: [exerciseTemplateId], references: [id])
+  exerciseTemplateId String?
+
+  @@map("sets")
+}
