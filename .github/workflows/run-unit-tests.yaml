@@ -1,0 +1,21 @@
+name: Run Unit Tests
+
+on: [push]
+
+jobs:
+  run-unit-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - run: npm ci
+        env:
+          DATABASE_URL: "postgresql://docker:docker@localhost:5480/apisolid?schema=public"
+          SECRET_KEY: testing-secret
+      - run: npm run test

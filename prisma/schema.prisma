@@ -41,6 +41,8 @@ model DefaultExercise {
   created_at   DateTime    @default(now())
   updated_at   DateTime    @updatedAt
 
+  exerciseTemplates ExerciseTemplate[]
+
   @@map("default_exercises")
 }
 
@@ -56,6 +58,7 @@ model User {
 
   trainmentTemplates TrainmentTemplate[]
   trainments         Trainment[]
+  sets               Set[]
 
   @@map("users")
 }
@@ -76,17 +79,19 @@ model TrainmentTemplate {
 }
 
 model ExerciseTemplate {
-  id   String @id @default(uuid())
-  name String
+  id String @id @default(uuid())
 
   trainmentTemplate     TrainmentTemplate @relation(fields: [trainment_template_id], references: [id])
   trainment_template_id String
 
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
+  defaultExercise     DefaultExercise @relation(fields: [exercise_catalog_id], references: [id])
+  exercise_catalog_id String
+
+  title      String
+  created_at DateTime  @default(now())
   deleted_at DateTime?
-  sets       Set[]
-  exercises  Exercise[]
+
+  exercises Exercise[]
 
   @@map("exercise_templates")
 }
@@ -103,6 +108,7 @@ model Trainment {
   started_at  DateTime   @default(now())
   finished_at DateTime?
   exercises   Exercise[]
+  sets        Set[]
 
   @@map("trainments")
 }
@@ -116,10 +122,10 @@ model Exercise {
   trainment    Trainment @relation(fields: [trainment_id], references: [id])
   trainment_id String
 
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
-  sets       Set[]
+  planned_sets Json     @default("{}")
+  created_at   DateTime @default(now())
+
+  sets Set[]
 
   @@map("exercises")
 }
@@ -127,17 +133,20 @@ model Exercise {
 model Set {
   id String @id @default(uuid())
 
+  trainment    Trainment @relation(fields: [trainment_id], references: [id])
+  trainment_id String
+
   exercise    Exercise @relation(fields: [exercise_id], references: [id])
   exercise_id String
 
-  index              Int /* Important for ordering */
-  repetitions        Int
-  weight             Float
-  created_at         DateTime          @default(now())
-  updated_at         DateTime          @updatedAt
-  deleted_at         DateTime?
-  exerciseTemplate   ExerciseTemplate? @relation(fields: [exerciseTemplateId], references: [id])
-  exerciseTemplateId String?
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
 
+  index        Int /* 1-based set index; maps to a planned_sets key */
+  weight       Float?
+  repetitions  Int?
+  performed_at DateTime @default(now())
+
+  @@unique([exercise_id, index])
   @@map("sets")
 }
