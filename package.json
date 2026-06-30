@@ -12,7 +12,8 @@
     "test:e2e": "vitest run --project e2e",
     "test:watch": "vitest --project unit",
     "test:e2e:watch": "vitest --project e2e",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare:exercise-images": "tsx scripts/prepare-exercise-images.ts"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +36,7 @@
     "@types/supertest": "^7.2.0",
     "@vitest/coverage-v8": "^4.1.9",
     "prisma": "^7.8.0",
+    "sharp": "^0.35.2",
     "supertest": "^7.2.2",
     "tsup": "^8.5.1",
     "tsx": "^4.22.4",

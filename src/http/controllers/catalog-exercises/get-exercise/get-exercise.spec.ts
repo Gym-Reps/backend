@@ -8,6 +8,8 @@ import { createAndAuthenticateUser } from '@/utils/test/create-and-authenticate-
 describe('Get Exercise (e2e)', () => {
   beforeAll(async () => {
     await app.ready()
+    // The data migration pre-seeds the catalog in every schema; start clean.
+    await prisma.defaultExercise.deleteMany()
   })
 
   afterAll(async () => {

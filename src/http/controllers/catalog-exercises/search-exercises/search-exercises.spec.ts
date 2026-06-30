@@ -26,6 +26,9 @@ async function seedCatalog() {
 describe('Search Exercises (e2e)', () => {
   beforeAll(async () => {
     await app.ready()
+    // The data migration pre-seeds the catalog in every schema; start from a
+    // clean slate so these assertions are deterministic.
+    await prisma.defaultExercise.deleteMany()
     await seedCatalog()
   })
 

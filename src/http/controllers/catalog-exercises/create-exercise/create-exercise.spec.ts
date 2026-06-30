@@ -1,11 +1,15 @@
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { app } from '@/app'
+import { prisma } from '@/lib/prisma'
 import { createAndAuthenticateUser } from '@/utils/test/create-and-authenticate-user'
 
 describe('Create Exercise (e2e)', () => {
   beforeAll(async () => {
     await app.ready()
+    // The data migration pre-seeds the catalog (incl. barbell-bench-press);
+    // clear it so the create-then-conflict assertions are deterministic.
+    await prisma.defaultExercise.deleteMany()
   })
 
   afterAll(async () => {
