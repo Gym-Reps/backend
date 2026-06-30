@@ -1,68 +1,95 @@
 /**
- * One-off asset prep: download each catalog exercise's photo from the
- * public-domain free-exercise-db (https://github.com/yuhonas/free-exercise-db,
- * The Unlicense) and write a lightweight ~256px WebP thumbnail to
- * `public/exercises/<slug>.webp`.
+ * One-off asset prep: download each catalog exercise's neutral, faceless
+ * line-art figure from the OpenTraining / Everkinetic exercise set
+ * (https://github.com/chaosbastler/opentraining-exercises, CC-BY-SA 3.0) and
+ * write a lightweight ~256px WebP thumbnail to `public/exercises/<slug>.webp`.
  *
- * Run with: `npx tsx scripts/prepare-exercise-images.ts`
+ * The source figures are black-on-transparent line drawings of a generic
+ * mannequin (no real person), so they're flattened onto white and letterboxed
+ * (`fit: contain`) to keep the whole pose visible.
  *
- * The generated images are committed to the repo (served via @fastify/static),
- * so this script only needs to be re-run when the catalog list changes.
+ * Run with: `npm run prepare:exercise-images`. The generated images are
+ * committed (served via @fastify/static); re-run only when the catalog changes.
+ * Attribution + license: see `public/exercises/CREDITS.md`.
  */
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
+import { defaultExercises } from '../prisma/data/default-exercises.js'
 
 const RAW_BASE =
-  'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises'
+  'https://raw.githubusercontent.com/chaosbastler/opentraining-exercises/master'
 
-// slug → free-exercise-db id (the folder holding that exercise's images).
+// slug → OpenTraining image basename (the "-1.png" start frame is appended).
 const SOURCES: Record<string, string> = {
-  'barbell-bench-press': 'Barbell_Bench_Press_-_Medium_Grip',
-  'incline-dumbbell-press': 'Incline_Dumbbell_Press',
-  'dumbbell-fly': 'Dumbbell_Flyes',
-  'push-up': 'Pushups',
-  'pull-up': 'Pullups',
-  'lat-pulldown': 'Wide-Grip_Lat_Pulldown',
-  'bent-over-barbell-row': 'Bent_Over_Barbell_Row',
-  'seated-cable-row': 'Seated_Cable_Rows',
-  deadlift: 'Barbell_Deadlift',
-  'overhead-press': 'Standing_Military_Press',
-  'dumbbell-shoulder-press': 'Dumbbell_Shoulder_Press',
-  'lateral-raise': 'Side_Lateral_Raise',
-  'face-pull': 'Face_Pull',
-  'barbell-curl': 'Barbell_Curl',
-  'dumbbell-curl': 'Dumbbell_Bicep_Curl',
-  'hammer-curl': 'Hammer_Curls',
-  'triceps-pushdown': 'Triceps_Pushdown',
-  'triceps-dip': 'Dips_-_Triceps_Version',
-  skullcrusher: 'EZ-Bar_Skullcrusher',
-  'close-grip-bench-press': 'Close-Grip_Barbell_Bench_Press',
-  'barbell-wrist-curl': 'Palms-Up_Barbell_Wrist_Curl_Over_A_Bench',
-  'cable-wrist-curl': 'Cable_Wrist_Curl',
-  plank: 'Plank',
+  // Chest
+  'barbell-bench-press': 'Bench-press',
+  'incline-dumbbell-press': 'still_unsorted/Dumbbell-incline-bench-press',
+  'dumbbell-fly': 'Dumbbell-flys',
+  'push-up': 'Push-ups',
+  'cable-crossover': 'still_unsorted/Cable-crossover',
+  // Back
+  'pull-up': 'still_unsorted/Chin-ups',
+  'lat-pulldown': 'still_unsorted/Close-grip-front-lat-pull-down',
+  'bent-over-barbell-row': 'still_unsorted/Reverse-grip-bent-over-rows',
+  'seated-cable-row': 'still_unsorted/Cable-seated-rows',
+  deadlift: 'still_unsorted/Dead-lifts',
+  superman: 'Supermans',
+  // Shoulders
+  'overhead-press': 'still_unsorted/Seated-military-shoulder-press',
+  'dumbbell-shoulder-press': 'still_unsorted/Dumbbell-shoulder-press',
+  'lateral-raise': 'Dumbbell-lateral-raises',
+  'rear-delt-row': 'Rear-deltoid-row',
+  'arnold-press': 'Arnold-press',
+  // Biceps
+  'barbell-curl': 'Biceps-curl',
+  'dumbbell-curl': 'Bicep-curls',
+  'hammer-curl': 'Bicep-hammer-curl',
+  'concentration-curl': 'Concentration-curls',
+  // Triceps
+  'triceps-pushdown': 'Low-triceps-extension',
+  'triceps-dip': 'Tricep-dips',
+  skullcrusher: 'Lying-triceps-extension-across-face',
+  'close-grip-bench-press': 'Narrow-grip-bench-press',
+  'bench-dip': 'Bench-dips',
+  // Core
+  'side-plank': 'Side-plank',
   crunch: 'Crunches',
-  'hanging-leg-raise': 'Hanging_Leg_Raise',
-  'barbell-squat': 'Barbell_Full_Squat',
-  'leg-press': 'Leg_Press',
-  'leg-extension': 'Leg_Extensions',
-  'barbell-lunge': 'Barbell_Lunge',
-  'romanian-deadlift': 'Romanian_Deadlift',
-  'lying-leg-curl': 'Lying_Leg_Curls',
-  'hip-thrust': 'Barbell_Hip_Thrust',
-  'standing-calf-raise': 'Standing_Calf_Raises',
-  'seated-calf-raise': 'Seated_Calf_Raise',
+  'leg-raise': 'Leg-raises',
+  // Quads
+  'barbell-squat': 'Squats',
+  'barbell-lunge': 'Lunges',
+  // Hamstrings
+  'good-morning': 'still_unsorted/Good-mornings',
+  'leg-curl': 'still_unsorted/Seated-leg-curl',
+  // Glutes
+  'glute-bridge': 'Bridge',
+  'glute-kickback': 'still_unsorted/One-legged-kickback',
 }
 
 async function main() {
+  // Every catalog slug must have a mapped source.
+  const unmapped = defaultExercises.filter((e) => !SOURCES[e.slug])
+  if (unmapped.length) {
+    throw new Error(
+      `No image source for: ${unmapped.map((e) => e.slug).join(', ')}`,
+    )
+  }
+
   const outDir = path.resolve(process.cwd(), 'public', 'exercises')
   await mkdir(outDir, { recursive: true })
 
-  const entries = Object.entries(SOURCES)
+  // Clear any previously generated thumbnails so removed slugs don't linger.
+  for (const file of await readdir(outDir)) {
+    if (file.endsWith('.webp')) {
+      await rm(path.join(outDir, file))
+    }
+  }
+
   let ok = 0
 
-  for (const [slug, id] of entries) {
-    const url = `${RAW_BASE}/${id}/0.jpg`
+  for (const { slug } of defaultExercises) {
+    const url = `${RAW_BASE}/${SOURCES[slug]}-1.png`
     const response = await fetch(url)
 
     if (!response.ok) {
@@ -72,8 +99,14 @@ async function main() {
 
     const input = Buffer.from(await response.arrayBuffer())
     const output = await sharp(input)
-      .resize({ width: 256, height: 256, fit: 'cover', position: 'centre' })
-      .webp({ quality: 78 })
+      .flatten({ background: '#ffffff' })
+      .resize({
+        width: 256,
+        height: 256,
+        fit: 'contain',
+        background: '#ffffff',
+      })
+      .webp({ quality: 80 })
       .toBuffer()
 
     await writeFile(path.join(outDir, `${slug}.webp`), output)
@@ -81,9 +114,9 @@ async function main() {
     console.log(`✓ ${slug}.webp (${(output.length / 1024).toFixed(1)} KB)`)
   }
 
-  console.log(`\nDone: ${ok}/${entries.length} images written to ${outDir}`)
+  console.log(`\nDone: ${ok}/${defaultExercises.length} images written to ${outDir}`)
 
-  if (ok !== entries.length) {
+  if (ok !== defaultExercises.length) {
     process.exit(1)
   }
 }

@@ -12,9 +12,12 @@ export interface DefaultExerciseSeed {
  * the data migration (`..._seed_default_exercises`) and `prisma/seed.ts`.
  *
  * Images live under `public/exercises/<slug>.webp` (served at
- * `/static/exercises/<slug>.webp`). They were derived from the public-domain
- * free-exercise-db (https://github.com/yuhonas/free-exercise-db, The Unlicense),
- * downsized to ~256px WebP thumbnails — see `scripts/prepare-exercise-images`.
+ * `/static/exercises/<slug>.webp`). They are neutral, faceless line-art figures
+ * derived from the OpenTraining / Everkinetic exercise set
+ * (https://github.com/chaosbastler/opentraining-exercises, CC-BY-SA 3.0),
+ * downsized to ~256px WebP — see `scripts/prepare-exercise-images.ts` and
+ * `public/exercises/CREDITS.md`. This set has no forearm/calf line-art, so those
+ * groups are intentionally not represented yet.
  */
 export const defaultExercises: DefaultExerciseSeed[] = (
   [
@@ -23,46 +26,44 @@ export const defaultExercises: DefaultExerciseSeed[] = (
     ['incline-dumbbell-press', 'Incline Dumbbell Press', 'CHEST'],
     ['dumbbell-fly', 'Dumbbell Fly', 'CHEST'],
     ['push-up', 'Push-Up', 'CHEST'],
+    ['cable-crossover', 'Cable Crossover', 'CHEST'],
     // Back
     ['pull-up', 'Pull-Up', 'BACK'],
     ['lat-pulldown', 'Lat Pulldown', 'BACK'],
     ['bent-over-barbell-row', 'Bent-Over Barbell Row', 'BACK'],
     ['seated-cable-row', 'Seated Cable Row', 'BACK'],
     ['deadlift', 'Deadlift', 'BACK'],
+    ['superman', 'Superman', 'BACK'],
     // Shoulders
     ['overhead-press', 'Overhead Press', 'SHOULDERS'],
     ['dumbbell-shoulder-press', 'Dumbbell Shoulder Press', 'SHOULDERS'],
     ['lateral-raise', 'Lateral Raise', 'SHOULDERS'],
-    ['face-pull', 'Face Pull', 'SHOULDERS'],
+    ['rear-delt-row', 'Rear Delt Row', 'SHOULDERS'],
+    ['arnold-press', 'Arnold Press', 'SHOULDERS'],
     // Biceps
     ['barbell-curl', 'Barbell Curl', 'BICEPS'],
     ['dumbbell-curl', 'Dumbbell Curl', 'BICEPS'],
     ['hammer-curl', 'Hammer Curl', 'BICEPS'],
+    ['concentration-curl', 'Concentration Curl', 'BICEPS'],
     // Triceps
     ['triceps-pushdown', 'Triceps Pushdown', 'TRICEPS'],
     ['triceps-dip', 'Triceps Dip', 'TRICEPS'],
     ['skullcrusher', 'Skullcrusher', 'TRICEPS'],
     ['close-grip-bench-press', 'Close-Grip Bench Press', 'TRICEPS'],
-    // Forearms
-    ['barbell-wrist-curl', 'Barbell Wrist Curl', 'FOREARMS'],
-    ['cable-wrist-curl', 'Cable Wrist Curl', 'FOREARMS'],
+    ['bench-dip', 'Bench Dip', 'TRICEPS'],
     // Core
-    ['plank', 'Plank', 'CORE'],
+    ['side-plank', 'Side Plank', 'CORE'],
     ['crunch', 'Crunch', 'CORE'],
-    ['hanging-leg-raise', 'Hanging Leg Raise', 'CORE'],
+    ['leg-raise', 'Leg Raise', 'CORE'],
     // Quads
     ['barbell-squat', 'Barbell Squat', 'QUADS'],
-    ['leg-press', 'Leg Press', 'QUADS'],
-    ['leg-extension', 'Leg Extension', 'QUADS'],
     ['barbell-lunge', 'Barbell Lunge', 'QUADS'],
     // Hamstrings
-    ['romanian-deadlift', 'Romanian Deadlift', 'HAMSTRINGS'],
-    ['lying-leg-curl', 'Lying Leg Curl', 'HAMSTRINGS'],
+    ['good-morning', 'Good Morning', 'HAMSTRINGS'],
+    ['leg-curl', 'Leg Curl', 'HAMSTRINGS'],
     // Glutes
-    ['hip-thrust', 'Hip Thrust', 'GLUTES'],
-    // Calves
-    ['standing-calf-raise', 'Standing Calf Raise', 'CALVES'],
-    ['seated-calf-raise', 'Seated Calf Raise', 'CALVES'],
+    ['glute-bridge', 'Glute Bridge', 'GLUTES'],
+    ['glute-kickback', 'Glute Kickback', 'GLUTES'],
   ] satisfies [string, string, MuscleGroup][]
 ).map(([slug, title, muscleGroup]) => ({
   slug,
