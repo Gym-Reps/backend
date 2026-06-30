@@ -7,6 +7,8 @@ services:
       - POSTGRESQL_USERNAME=docker
       - POSTGRESQL_PASSWORD=docker
       - POSTGRESQL_DATABASE=reps-backend
+    volumes:
+      - db:/var/lib/postgresql/data
 
   reps-backend-redis:
     image: bitnami/redis
@@ -14,3 +16,7 @@ services:
       - 6379:6379
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
+
+volumes:
+  db:
+    driver: local
