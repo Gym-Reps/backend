@@ -1,8 +1,11 @@
+import path from "node:path";
 import fastifyCookie from "@fastify/cookie";
 import fastifyJwt from "@fastify/jwt";
+import fastifyStatic from "@fastify/static";
 import fastify from "fastify";
 import { ZodError, z } from "zod";
 import { env } from "./env";
+import { catalogExerciseRoutes } from "./http/controllers/catalog-exercises/routes";
 import { healthCheckRoutes } from "./http/controllers/healthcheck/routes";
 import { trainmentTemplateRoutes } from "./http/controllers/trainment-templates/routes";
 import { trainmentRoutes } from "./http/controllers/trainments/routes";
@@ -26,6 +29,13 @@ app.register(fastifyJwt, {
 
 app.register(fastifyCookie)
 
+// Catalog exercise images ship with the app; served off the API namespace so
+// `/static/...` never collides with `/catalog/exercises/:id`.
+app.register(fastifyStatic, {
+    root: path.resolve(process.cwd(), "public"),
+    prefix: "/static/",
+})
+
 app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ZodError) {
         return reply.status(400).send({
@@ -45,3 +55,4 @@ app.register(healthCheckRoutes)
 app.register(userRoutes)
 app.register(trainmentTemplateRoutes)
 app.register(trainmentRoutes)
+app.register(catalogExerciseRoutes)
