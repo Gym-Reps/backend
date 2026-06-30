@@ -1,3 +1,4 @@
+import fastifyCookie from "@fastify/cookie";
 import fastifyJwt from "@fastify/jwt";
 import fastify from "fastify";
 import { ZodError, z } from "zod";
@@ -12,7 +13,16 @@ export const app = fastify({
 
 app.register(fastifyJwt, {
     secret: env.SECRET_KEY,
+    cookie: {
+        cookieName: "refreshToken",
+        signed: false,
+    },
+    sign: {
+        expiresIn: "10m",
+    },
 })
+
+app.register(fastifyCookie)
 
 app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ZodError) {
