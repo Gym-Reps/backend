@@ -4,6 +4,8 @@ import fastify from "fastify";
 import { ZodError, z } from "zod";
 import { env } from "./env";
 import { healthCheckRoutes } from "./http/controllers/healthcheck/routes";
+import { trainmentTemplateRoutes } from "./http/controllers/trainment-templates/routes";
+import { trainmentRoutes } from "./http/controllers/trainments/routes";
 import { userRoutes } from "./http/controllers/users/routes";
 
 export const app = fastify({
@@ -41,3 +43,5 @@ app.setErrorHandler((error, _request, reply) => {
 
 app.register(healthCheckRoutes)
 app.register(userRoutes)
+app.register(trainmentTemplateRoutes)
+app.register(trainmentRoutes)
