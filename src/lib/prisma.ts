@@ -1,6 +1,6 @@
 import { env } from "@/env";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client/extension";
+import { PrismaClient } from "@prisma-client";
 
 const isDev = env.NODE_ENV === 'dev'
 
@@ -10,5 +10,5 @@ const adapter = new PrismaPg({
 
 export const prisma = new PrismaClient({
     adapter,
-    log: isDev ? ["query"]: []
+    log: isDev ? ["query"] : []
 })

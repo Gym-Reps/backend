@@ -5,14 +5,14 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['dev', 'test', 'prod']).default('dev'),
   PORT: z.coerce.number().default(3333),
   DATABASE_URL: z.url(),
-//   SECRET_KEY: z.string(),
+  SECRET_KEY: z.string(),
 })
 
 const _env = envSchema.safeParse({
   NODE_ENV: process.env['NODE_ENV'],
   PORT: process.env['PORT'],
   DATABASE_URL: process.env['DATABASE_URL'],
-//   SECRET_KEY: process.env['SECRET_KEY'],
+  SECRET_KEY: process.env['SECRET_KEY'],
 })
 
 if (!_env.success) {

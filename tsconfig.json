@@ -8,10 +8,13 @@
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",
     "target": "esnext",
-    "types": [],
+    "types": ["node"],
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@prisma-client": [
+        "./generated/prisma/client"
       ]
     },
     // For nodejs:

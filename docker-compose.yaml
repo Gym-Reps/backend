@@ -3,7 +3,14 @@ services:
     image: bitnami/postgresql
     ports:
       - 5480:5432
-    environment: 
+    environment:
       - POSTGRESQL_USERNAME=docker
       - POSTGRESQL_PASSWORD=docker
       - POSTGRESQL_DATABASE=reps-backend
+
+  reps-backend-redis:
+    image: bitnami/redis
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes

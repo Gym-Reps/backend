@@ -14,14 +14,19 @@ datasource db {
 
 enum Role {
   MEMBER
+  ADMIN
 }
 
 model User {
-  id                 String              @id @default(uuid())
-  name               String
-  email              String              @unique
-  password_hash      String
-  role               Role                @default(MEMBER)
+  id            String    @id @default(uuid())
+  username      String    @unique
+  email         String    @unique
+  password_hash String
+  role          Role      @default(MEMBER)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
   trainmentTemplates TrainmentTemplate[]
   trainments         Trainment[]
 
@@ -49,8 +54,6 @@ model ExerciseTemplate {
 
   trainmentTemplate     TrainmentTemplate @relation(fields: [trainment_template_id], references: [id])
   trainment_template_id String
-
-  sets Json default("{}")
 
   created_at DateTime   @default(now())
   updated_at DateTime   @updatedAt
