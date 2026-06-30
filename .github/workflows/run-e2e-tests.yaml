@@ -25,11 +25,10 @@ jobs:
           cache: "npm"
 
       - run: npm ci
-      - run: npx prisma generate
         env:
           SECRET_KEY: testing-secret
-          DATABASE_URL: "postgresql://docker:docker@localhost:5432/apisolid?schema=public"
+          DATABASE_URL: "postgresql://docker:docker@localhost:5480/apisolid?schema=public"
       - run: npm run test:e2e
         env:
           SECRET_KEY: testing-secret
-          DATABASE_URL: "postgresql://docker:docker@localhost:5432/apisolid?schema=public"
+          DATABASE_URL: "postgresql://docker:docker@localhost:5480/apisolid?schema=public"

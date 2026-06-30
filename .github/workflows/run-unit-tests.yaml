@@ -12,11 +12,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'npm'
+          cache: "npm"
 
       - run: npm ci
-      - run: npx prisma generate
         env:
-          DATABASE_URL: "postgresql://docker:docker@localhost:5432/apisolid?schema=public"
+          DATABASE_URL: "postgresql://docker:docker@localhost:5480/apisolid?schema=public"
           SECRET_KEY: testing-secret
       - run: npm run test
