@@ -13,5 +13,14 @@ export interface TrainmentsRepository {
     start: Date,
     end: Date,
   ): Promise<Trainment[]>
+  // The immediately-preceding finished session of the same template (09_METRICS):
+  // most recent finished trainment for the user with the same template that
+  // started before `before`. Null on the first-ever session.
+  findPreviousSameTemplate(params: {
+    userId: string
+    trainmentTemplateId: string
+    before: Date
+    excludeTrainmentId: string
+  }): Promise<Trainment | null>
   save(trainment: Trainment): Promise<Trainment>
 }

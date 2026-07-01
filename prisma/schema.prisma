@@ -71,6 +71,7 @@ model User {
   trainments         Trainment[]
   sets               Set[]
   events             Event[]
+  metrics            Metric[]
 
   @@map("users")
 }
@@ -121,6 +122,7 @@ model Trainment {
   finished_at DateTime?
   exercises   Exercise[]
   sets        Set[]
+  metrics     Metric[]
 
   @@map("trainments")
 }
@@ -137,7 +139,8 @@ model Exercise {
   planned_sets Json     @default("{}")
   created_at   DateTime @default(now())
 
-  sets Set[]
+  sets    Set[]
+  metrics Metric[]
 
   @@map("exercises")
 }
@@ -159,6 +162,11 @@ model Set {
   repetitions  Int?
   performed_at DateTime @default(now())
 
+  // Metric back-relations (09_METRICS): a set can be the "previous" reference for
+  // many later metrics, but is the "current" of at most one (current_set_id unique).
+  previousSetMetrics Metric[] @relation("PreviousSetMetric")
+  currentSetMetric   Metric?  @relation("CurrentSetMetric")
+
   @@unique([exercise_id, index])
   @@map("sets")
 }
@@ -178,4 +186,28 @@ model Event {
 
   @@index([status, created_at]) // sweeper lookup for stuck PENDING rows
   @@map("events")
+}
+
+// Per-set progress diff (09_METRICS) between the same exercise slot across a
+// user's consecutive same-template sessions. Written only by the async
+// COMPUTE_TRAINMENT_METRICS handler; unique current_set_id makes it idempotent.
+model Metric {
+  id               String    @id @default(uuid())
+  user             User      @relation(fields: [user_id], references: [id])
+  user_id          String
+  trainment        Trainment @relation(fields: [trainment_id], references: [id])
+  trainment_id     String
+  exercise         Exercise  @relation(fields: [exercise_id], references: [id])
+  exercise_id      String
+  previousSet      Set       @relation("PreviousSetMetric", fields: [previous_set_id], references: [id])
+  previous_set_id  String
+  currentSet       Set       @relation("CurrentSetMetric", fields: [current_set_id], references: [id])
+  current_set_id   String    @unique
+  weight_diff      Float
+  repetitions_diff Int
+  created_at       DateTime  @default(now())
+
+  @@index([trainment_id])
+  @@index([exercise_id])
+  @@map("metrics")
 }

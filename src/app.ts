@@ -9,6 +9,7 @@ import { catalogExerciseRoutes } from "./http/controllers/catalog-exercises/rout
 import { exerciseTemplateRoutes } from "./http/controllers/exercise-templates/routes";
 import { exerciseRoutes } from "./http/controllers/exercises/routes";
 import { healthCheckRoutes } from "./http/controllers/healthcheck/routes";
+import { metricRoutes } from "./http/controllers/metrics/routes";
 import { setRoutes } from "./http/controllers/sets/routes";
 import { trainmentTemplateRoutes } from "./http/controllers/trainment-templates/routes";
 import { trainmentRoutes } from "./http/controllers/trainments/routes";
@@ -62,3 +63,4 @@ app.register(catalogExerciseRoutes)
 app.register(exerciseTemplateRoutes)
 app.register(exerciseRoutes)
 app.register(setRoutes)
+app.register(metricRoutes)
