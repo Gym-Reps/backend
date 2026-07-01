@@ -5,6 +5,7 @@ import type {
   SyncExerciseInput,
   TrainmentSyncRepository,
 } from '@/repositories/trainment-sync-repository'
+import type { EventQueue } from '@/queues/event-queue'
 import { InvalidSetIndexError } from '../../errors/invalid-set-index-error'
 import { NotAllowedError } from '../../errors/not-allowed-error'
 import { ResourceNotFoundError } from '../../errors/resource-not-found-error'
@@ -30,6 +31,7 @@ export class SyncTrainmentUseCase {
     private trainmentSyncRepository: TrainmentSyncRepository,
     private trainmentTemplatesRepository: TrainmentTemplatesRepository,
     private exerciseTemplatesRepository: ExerciseTemplatesRepository,
+    private eventQueue: EventQueue,
   ) {}
 
   async execute({
@@ -71,7 +73,8 @@ export class SyncTrainmentUseCase {
     }
 
     // 3. Persist atomically; user_id is forced from the caller for every row.
-    return this.trainmentSyncRepository.persistTrainmentGraph({
+    //    The metrics-trigger event is written inside that same transaction.
+    const result = await this.trainmentSyncRepository.persistTrainmentGraph({
       id,
       trainmentTemplateId,
       userId,
@@ -79,6 +82,21 @@ export class SyncTrainmentUseCase {
       finishedAt,
       exercises,
     })
+
+    // 4. After commit, add the BullMQ job for the committed event. Best-effort:
+    //    the row is durable and PENDING, so a failed add is recovered by the
+    //    sweeper (at-least-once).
+    try {
+      await this.eventQueue.add({
+        eventId: result.eventId,
+        eventType: 'COMPUTE_TRAINMENT_METRICS',
+        metadata: { trainmentId: id },
+      })
+    } catch (err) {
+      console.error('[events] failed to enqueue sync job, sweeper will retry', err)
+    }
+
+    return result
   }
 
   /**
@@ -90,7 +108,7 @@ export class SyncTrainmentUseCase {
     const indices = exercise.sets.map((set) => set.index).sort((a, b) => a - b)
     const contiguous = indices.every((value, position) => value === position + 1)
 
-    if (
+    if ( 
       exercise.sets.length !== plannedSetCount(exercise.plannedSets) ||
       !contiguous
     ) {

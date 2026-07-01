@@ -10,6 +10,8 @@ const envSchema = z.object({
   // Comma-separated list of allowed origins, or "*" to
   //  reflect any origin.
   CORS_ORIGIN: z.string().default('*'),
+  // Shared Redis connection for the BullMQ queue + worker (08_EVENTS_MODULE).
+  REDIS_URL: z.url().default('redis://localhost:6379'),
 })
 
 const _env = envSchema.safeParse({
@@ -19,6 +21,7 @@ const _env = envSchema.safeParse({
   SECRET_KEY: process.env['SECRET_KEY'],
   APP_URL: process.env['APP_URL'],
   CORS_ORIGIN: process.env['CORS_ORIGIN'],
+  REDIS_URL: process.env['REDIS_URL'],
 })
 
 if (!_env.success) {

@@ -3,6 +3,7 @@ import type { TrainmentsRepository } from '@/repositories/trainments-repository'
 import { NotAllowedError } from '../../errors/not-allowed-error'
 import { ResourceNotFoundError } from '../../errors/resource-not-found-error'
 import { TrainmentAlreadyFinishedError } from '../../errors/trainment-already-finished-error'
+import type { EnqueueEventUseCase } from '../../events/enqueue-event/enqueue-event'
 
 interface FinishTrainmentUseCaseRequest {
   userId: string
@@ -14,7 +15,10 @@ interface FinishTrainmentUseCaseResponse {
 }
 
 export class FinishTrainmentUseCase {
-  constructor(private trainmentsRepository: TrainmentsRepository) {}
+  constructor(
+    private trainmentsRepository: TrainmentsRepository,
+    private enqueueEventUseCase: EnqueueEventUseCase,
+  ) {}
 
   async execute({
     userId,
@@ -38,9 +42,14 @@ export class FinishTrainmentUseCase {
 
     const finished = await this.trainmentsRepository.save(trainment)
 
-    // TODO(08_EVENTS_MODULE): enqueue a COMPUTE_TRAINMENT_METRICS event
-    // ({ trainmentId }) inside the same transaction so 09_METRICS computes
-    // asynchronously. Deferred until the events module exists.
+    // Outbox: persist a COMPUTE_TRAINMENT_METRICS event (PENDING) and enqueue its
+    // job so 09_METRICS computes asynchronously off the request path. The row is
+    // the durable anchor; the queue add is best-effort (sweeper backstops).
+    await this.enqueueEventUseCase.execute({
+      eventType: 'COMPUTE_TRAINMENT_METRICS',
+      userId,
+      metadata: { trainmentId: finished.id },
+    })
 
     return { trainment: finished }
   }

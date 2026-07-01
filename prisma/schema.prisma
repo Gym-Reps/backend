@@ -17,6 +17,17 @@ enum Role {
   ADMIN
 }
 
+enum EventType {
+  COMPUTE_TRAINMENT_METRICS
+}
+
+enum EventStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum MuscleGroup {
   CHEST
   BACK
@@ -59,6 +70,7 @@ model User {
   trainmentTemplates TrainmentTemplate[]
   trainments         Trainment[]
   sets               Set[]
+  events             Event[]
 
   @@map("users")
 }
@@ -149,4 +161,21 @@ model Set {
 
   @@unique([exercise_id, index])
   @@map("sets")
+}
+
+model Event {
+  id           String      @id @default(uuid())
+  event_type   EventType
+  status       EventStatus @default(PENDING)
+  user         User        @relation(fields: [user_id], references: [id])
+  user_id      String
+  metadata     Json        @default("{}")
+  attempts     Int         @default(0)
+  last_error   String?
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+  processed_at DateTime?
+
+  @@index([status, created_at]) // sweeper lookup for stuck PENDING rows
+  @@map("events")
 }

@@ -1,4 +1,5 @@
-import type { Exercise, Set as SetModel, Trainment } from '@prisma-client'
+import { randomUUID } from 'node:crypto'
+import type { Event, Exercise, Set as SetModel, Trainment } from '@prisma-client'
 import { SyncConflictError } from '@/use-cases/errors/sync-conflict-error'
 import type {
   PersistedTrainmentGraph,
@@ -12,6 +13,7 @@ export class InMemoryTrainmentSyncRepository
   public trainments: Trainment[] = []
   public exercises: Exercise[] = []
   public sets: SetModel[] = []
+  public events: Event[] = []
 
   async persistTrainmentGraph(
     graph: TrainmentGraph,
@@ -79,7 +81,29 @@ export class InMemoryTrainmentSyncRepository
       }
     }
 
-    return { trainment, exercises: persistedExercises, sets: persistedSets, created }
+    // Outbox: the metrics-trigger event, written as part of the same graph.
+    const now = new Date()
+    const event: Event = {
+      id: randomUUID(),
+      event_type: 'COMPUTE_TRAINMENT_METRICS',
+      status: 'PENDING',
+      user_id: graph.userId,
+      metadata: { trainmentId: graph.id } as unknown as Event['metadata'],
+      attempts: 0,
+      last_error: null,
+      created_at: now,
+      updated_at: now,
+      processed_at: null,
+    }
+    this.events.push(event)
+
+    return {
+      trainment,
+      exercises: persistedExercises,
+      sets: persistedSets,
+      created,
+      eventId: event.id,
+    }
   }
 
   private upsertTrainment(trainment: Trainment) {

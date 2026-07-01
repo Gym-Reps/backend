@@ -38,6 +38,11 @@ export interface PersistedTrainmentGraph {
   sets: SetModel[]
   /** true when this sync created the trainment (→ 201), false on idempotent re-sync (→ 200). */
   created: boolean
+  /**
+   * Id of the COMPUTE_TRAINMENT_METRICS `events` row written inside the same
+   * transaction (outbox). The use-case enqueues its BullMQ job after commit.
+   */
+  eventId: string
 }
 
 export interface TrainmentSyncRepository {

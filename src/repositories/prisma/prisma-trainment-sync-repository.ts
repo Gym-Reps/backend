@@ -86,13 +86,19 @@ export class PrismaTrainmentSyncRepository
         }
       }
 
-      // TODO(08_EVENTS_MODULE): within this same transaction, insert a
-      // COMPUTE_TRAINMENT_METRICS `events` row (outbox) for { trainmentId: graph.id }
-      // and dispatch its BullMQ job after commit, so every synced session gets
-      // metrics queued. Deferred until the events module lands (mirrors the
-      // finish-trainment enqueue deferral in 01_TRAINMENT_MODULE).
+      // Outbox: write the COMPUTE_TRAINMENT_METRICS event inside this same
+      // transaction, so a synced session and its metrics-trigger commit together
+      // (never one without the other). The use-case adds the BullMQ job after
+      // commit; the sweeper re-enqueues if that add is lost.
+      const event = await tx.event.create({
+        data: {
+          event_type: 'COMPUTE_TRAINMENT_METRICS',
+          user_id: graph.userId,
+          metadata: { trainmentId: graph.id },
+        },
+      })
 
-      return { trainment, exercises, sets, created }
+      return { trainment, exercises, sets, created, eventId: event.id }
     })
   }
 }

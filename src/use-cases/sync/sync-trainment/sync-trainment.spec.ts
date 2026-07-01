@@ -4,6 +4,7 @@ import { InMemoryExerciseTemplatesRepository } from '@/repositories/in-memory/in
 import { InMemoryTrainmentSyncRepository } from '@/repositories/in-memory/in-memory-trainment-sync-repository'
 import { InMemoryTrainmentTemplatesRepository } from '@/repositories/in-memory/in-memory-trainment-templates-repository'
 import type { SyncExerciseInput } from '@/repositories/trainment-sync-repository'
+import { InMemoryEventQueue } from '@/queues/in-memory/in-memory-event-queue'
 import { InvalidSetIndexError } from '../../errors/invalid-set-index-error'
 import { NotAllowedError } from '../../errors/not-allowed-error'
 import { ResourceNotFoundError } from '../../errors/resource-not-found-error'
@@ -12,6 +13,7 @@ import { SyncTrainmentUseCase } from './sync-trainment'
 let syncRepository: InMemoryTrainmentSyncRepository
 let trainmentTemplatesRepository: InMemoryTrainmentTemplatesRepository
 let exerciseTemplatesRepository: InMemoryExerciseTemplatesRepository
+let eventQueue: InMemoryEventQueue
 let sut: SyncTrainmentUseCase
 
 function buildExercise(exerciseTemplateId: string, setCount = 2): SyncExerciseInput {
@@ -54,10 +56,12 @@ describe('Sync Trainment Use Case', () => {
     syncRepository = new InMemoryTrainmentSyncRepository()
     trainmentTemplatesRepository = new InMemoryTrainmentTemplatesRepository()
     exerciseTemplatesRepository = new InMemoryExerciseTemplatesRepository()
+    eventQueue = new InMemoryEventQueue()
     sut = new SyncTrainmentUseCase(
       syncRepository,
       trainmentTemplatesRepository,
       exerciseTemplatesRepository,
+      eventQueue,
     )
   })
 
@@ -85,6 +89,13 @@ describe('Sync Trainment Use Case', () => {
     expect(result.sets).toHaveLength(5)
     expect(syncRepository.trainments).toHaveLength(1)
     expect(syncRepository.sets).toHaveLength(5)
+    // outbox: a metrics event is written in-transaction and its job enqueued
+    expect(syncRepository.events).toHaveLength(1)
+    expect(syncRepository.events[0]?.metadata).toEqual({
+      trainmentId,
+    })
+    expect(eventQueue.jobs).toHaveLength(1)
+    expect(eventQueue.jobs[0]?.eventId).toBe(result.eventId)
     // client-generated ids preserved
     expect(syncRepository.exercises.map((e) => e.id).sort()).toEqual(
       exercises.map((e) => e.id).sort(),
