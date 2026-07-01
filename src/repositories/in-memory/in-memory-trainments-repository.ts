@@ -60,6 +60,27 @@ export class InMemoryTrainmentsRepository implements TrainmentsRepository {
       .sort((a, b) => b.finished_at!.getTime() - a.finished_at!.getTime())
   }
 
+  async findPreviousSameTemplate(params: {
+    userId: string
+    trainmentTemplateId: string
+    before: Date
+    excludeTrainmentId: string
+  }) {
+    return (
+      this.items
+        .filter(
+          (item) =>
+            item.user_id === params.userId &&
+            item.trainment_template_id === params.trainmentTemplateId &&
+            item.id !== params.excludeTrainmentId &&
+            item.finished_at !== null &&
+            item.started_at.getTime() < params.before.getTime(),
+        )
+        .sort((a, b) => b.started_at.getTime() - a.started_at.getTime())[0] ??
+      null
+    )
+  }
+
   async save(trainment: Trainment) {
     const index = this.items.findIndex((item) => item.id === trainment.id)
 

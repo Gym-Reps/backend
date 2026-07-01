@@ -40,6 +40,24 @@ export class PrismaTrainmentsRepository implements TrainmentsRepository {
     })
   }
 
+  async findPreviousSameTemplate(params: {
+    userId: string
+    trainmentTemplateId: string
+    before: Date
+    excludeTrainmentId: string
+  }) {
+    return prisma.trainment.findFirst({
+      where: {
+        user_id: params.userId,
+        trainment_template_id: params.trainmentTemplateId,
+        id: { not: params.excludeTrainmentId },
+        finished_at: { not: null },
+        started_at: { lt: params.before },
+      },
+      orderBy: { started_at: 'desc' },
+    })
+  }
+
   async save(trainment: Trainment) {
     return prisma.trainment.update({
       where: { id: trainment.id },
