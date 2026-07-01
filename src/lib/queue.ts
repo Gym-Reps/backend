@@ -1,23 +1,32 @@
-import { Queue, Worker } from 'bullmq'
-import IORedis from 'ioredis'
+import { type ConnectionOptions, Queue, Worker } from 'bullmq'
 import { env } from '@/env'
 import { makeProcessEventUseCase } from '@/use-cases/_factories/make-process-event-use-case'
 
 /**
- * The single BullMQ/ioredis transport hub — the only module allowed to import
- * `bullmq`/`ioredis`. Everything is built lazily so merely importing this file
- * (which happens transitively via the controllers → factories chain, including
- * in tests) never opens a Redis connection; the socket is created on first use.
+ * The single BullMQ transport hub — the only module allowed to import `bullmq`.
+ * The Redis connection is expressed as a plain options object parsed from
+ * `REDIS_URL` (not a shared `ioredis` instance): BullMQ bundles its own copy of
+ * `ioredis`, so passing our instance across that boundary trips a dual-package
+ * type mismatch. Letting BullMQ own its connections avoids it entirely.
+ *
+ * Building the options object opens no socket; connections are created lazily
+ * when the Queue/Worker is instantiated, so importing this file (which happens
+ * transitively via controllers → factories, including in tests) stays inert.
  */
 export const METRICS_QUEUE = 'metrics'
 
-let connection: IORedis | undefined
-function getConnection() {
-  if (!connection) {
+function getConnection(): ConnectionOptions {
+  const url = new URL(env.REDIS_URL)
+
+  return {
+    host: url.hostname,
+    port: url.port ? Number(url.port) : 6379,
     // `maxRetriesPerRequest: null` is required by BullMQ's blocking commands.
-    connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null })
+    maxRetriesPerRequest: null,
+    ...(url.username ? { username: url.username } : {}),
+    ...(url.password ? { password: url.password } : {}),
+    ...(url.protocol === 'rediss:' ? { tls: {} } : {}),
   }
-  return connection
 }
 
 let metricsQueue: Queue | undefined

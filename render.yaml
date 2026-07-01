@@ -1,0 +1,55 @@
+# Render Blueprint for reps-backend (fully free tier).
+# Provisions: Postgres, a Key Value (Redis) instance, and the HTTP API (web). The
+# BullMQ metrics consumer + outbox sweeper run IN-PROCESS inside the web service
+# (see src/server.ts) because Render's free plan has no background workers. To
+# scale the consumer out later, add a `type: worker` service running
+# `npm run start:worker` (src/worker.ts) — see DEPLOY.md.
+#
+# Commit this file, then in Render: New > Blueprint and point it at this repo.
+
+databases:
+  - name: reps-backend-db
+    databaseName: reps_backend
+    user: reps_backend
+    plan: free # 30-day expiry on free; upgrade for production
+
+services:
+  # ---- Redis / Key Value (BullMQ transport) --------------------------------
+  - type: keyvalue
+    name: reps-backend-redis
+    plan: free
+    # Only allow connections from other services in this Render account.
+    ipAllowList: []
+    # BullMQ requires jobs to survive memory pressure — never evict keys.
+    maxmemoryPolicy: noeviction
+
+  # ---- HTTP API (web service) ----------------------------------------------
+  - type: web
+    name: reps-backend-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    # Apply pending migrations, then boot the API. On a paid instance you can
+    # move `migrate:deploy` to `preDeployCommand` instead (runs once per deploy).
+    startCommand: npm run migrate:deploy && npm run start
+    healthCheckPath: /healthcheck
+    envVars:
+      - key: NODE_ENV
+        value: prod
+      - key: DATABASE_URL
+        fromDatabase:
+          name: reps-backend-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: reps-backend-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      # Set this to the service's public URL after the first deploy so catalog
+      # image URLs (APP_URL + image_path) resolve. Kept manual (sync:false).
+      - key: APP_URL
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"

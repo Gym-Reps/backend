@@ -1,5 +1,7 @@
 import type { Trainment } from '@prisma-client'
 import type { TrainmentsRepository } from '@/repositories/trainments-repository'
+import type { UserPreferencesRepository } from '@/repositories/user-preferences-repository'
+import { resolvePreferences } from '../../user-preferences/preferences'
 import { getWeekRange } from '../../_utils/week-range'
 
 interface GetWeeklyProgressUseCaseRequest {
@@ -17,7 +19,10 @@ interface GetWeeklyProgressUseCaseResponse {
 }
 
 export class GetWeeklyProgressUseCase {
-  constructor(private trainmentsRepository: TrainmentsRepository) {}
+  constructor(
+    private trainmentsRepository: TrainmentsRepository,
+    private userPreferencesRepository: UserPreferencesRepository,
+  ) {}
 
   async execute({
     userId,
@@ -32,9 +37,13 @@ export class GetWeeklyProgressUseCase {
         weekEnd,
       )
 
-    // TODO(02_USER_PREFERENCES_MODULE): read weeklyTrainingCount from the user's
-    // preferences for the goal. Until that module exists, no goal is available.
-    const goal: number | null = null
+    // The weekly goal lives in the user's preferences (02_USER_PREFERENCES);
+    // `weeklyTrainingCount` may be null (no goal set).
+    const preferences =
+      await this.userPreferencesRepository.findByUserId(userId)
+    const goal = preferences
+      ? resolvePreferences(preferences.preferences).weeklyTrainingCount
+      : null
 
     return {
       weekStart,
