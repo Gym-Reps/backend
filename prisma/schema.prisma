@@ -72,8 +72,23 @@ model User {
   sets               Set[]
   events             Event[]
   metrics            Metric[]
+  preferences        UserPreferences?
 
   @@map("users")
+}
+
+// Per-user UI/measurement preferences (02_USER_PREFERENCES). One row per user
+// (user_id unique). The enum/shape constraints live in application code (Zod),
+// not Postgres — the column is free-form JSONB defaulting to `{}`.
+model UserPreferences {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [user_id], references: [id])
+  user_id     String   @unique
+  preferences Json     @default("{}")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("user_preferences")
 }
 
 model TrainmentTemplate {

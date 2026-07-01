@@ -5,8 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx --watch src/server.ts",
+    "worker": "tsx --watch src/worker.ts",
     "build": "prisma generate && tsup src --out-dir build",
     "start": "node build/server.js",
+    "start:worker": "node build/worker.js",
+    "migrate:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "test": "vitest run --project unit",
     "test:e2e": "vitest run --project e2e",
@@ -42,6 +45,7 @@
     "supertest": "^7.2.2",
     "tsup": "^8.5.1",
     "tsx": "^4.22.4",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.9"
   }
 }

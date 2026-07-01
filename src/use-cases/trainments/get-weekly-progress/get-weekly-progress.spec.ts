@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { InMemoryTrainmentsRepository } from '@/repositories/in-memory/in-memory-trainments-repository'
+import { InMemoryUserPreferencesRepository } from '@/repositories/in-memory/in-memory-user-preferences-repository'
+import { DEFAULT_PREFERENCES } from '../../user-preferences/preferences'
 import { GetWeeklyProgressUseCase } from './get-weekly-progress'
 
 let trainmentsRepository: InMemoryTrainmentsRepository
+let userPreferencesRepository: InMemoryUserPreferencesRepository
 let sut: GetWeeklyProgressUseCase
 
 // Tuesday — week window is Mon 2026-06-29 .. Sun 2026-07-05 (UTC).
@@ -11,7 +14,11 @@ const reference = new Date('2026-06-30T12:00:00Z')
 describe('Get Weekly Progress Use Case', () => {
   beforeEach(() => {
     trainmentsRepository = new InMemoryTrainmentsRepository()
-    sut = new GetWeeklyProgressUseCase(trainmentsRepository)
+    userPreferencesRepository = new InMemoryUserPreferencesRepository()
+    sut = new GetWeeklyProgressUseCase(
+      trainmentsRepository,
+      userPreferencesRepository,
+    )
   })
 
   it('should count only the user finished sessions inside the current week', async () => {
@@ -68,5 +75,16 @@ describe('Get Weekly Progress Use Case', () => {
     expect(result.completed).toEqual(0)
     expect(result.trainments).toHaveLength(0)
     expect(result.goal).toBeNull()
+  })
+
+  it('should return the goal from the user preferences when set', async () => {
+    await userPreferencesRepository.create({
+      user_id: 'user-1',
+      preferences: { ...DEFAULT_PREFERENCES, weeklyTrainingCount: 4 },
+    })
+
+    const result = await sut.execute({ userId: 'user-1', reference })
+
+    expect(result.goal).toEqual(4)
   })
 })
